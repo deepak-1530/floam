@@ -4,10 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Grid1
-        - /TF1
         - /TF1/Frames1
-        - /map1
         - /map1/Autocompute Value Bounds1
       Splitter Ratio: 0.5
     Tree Height: 728
@@ -60,9 +57,11 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        aft_mapped:
-          Value: false
         base_link:
+          Value: true
+        fcu_utm:
+          Value: true
+        local_origin:
           Value: true
         map:
           Value: true
@@ -76,8 +75,6 @@ Visualization Manager:
       Tree:
         world:
           map:
-            aft_mapped:
-              {}
             base_link:
               {}
       Update Interval: 0
@@ -165,6 +162,38 @@ Visualization Manager:
       Topic: /base_link/trajectory
       Unreliable: false
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /slamTrajMarkerFloam
+      Name: MarkerArray
+      Namespaces:
+        39: true
+        40: true
+        41: true
+        42: true
+        43: true
+        44: true
+        45: true
+        46: true
+        47: true
+        48: true
+        49: true
+        50: true
+        51: true
+        52: true
+        53: true
+        54: true
+        55: true
+        56: true
+        57: true
+        58: true
+        59: true
+        60: true
+        61: true
+        62: true
+        63: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -193,7 +222,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/ThirdPersonFollower
-      Distance: 16.892133712768555
+      Distance: 40.87535858154297
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -229,5 +258,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1853
-  X: 795
+  X: 67
   Y: 27

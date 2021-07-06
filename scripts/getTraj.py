@@ -11,8 +11,8 @@ from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 
 trajectory =  Path()
-trajPub = rospy.Publisher("/slamTrajectory", Path, queue_size=1)
-markerPub = rospy.Publisher("/slamTrajMarker", MarkerArray, queue_size=1)
+trajPub = rospy.Publisher("/slamTrajectoryFloam", Path, queue_size=1)
+markerPub = rospy.Publisher("/slamTrajMarkerFloam", MarkerArray, queue_size=1)
 
 
 count = 0
@@ -86,7 +86,7 @@ def odomCb(msg):
     count += 1
     
 if __name__=="__main__":
-    rospy.init_node("trajectory_node")
+    rospy.init_node("trajectory_node_floam")
     print("Here")
     odomSub = rospy.Subscriber("/odom", Odometry, odomCb)
     rospy.spin()
