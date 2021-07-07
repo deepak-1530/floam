@@ -78,7 +78,7 @@ def odomCb(msg):
     roll, pitch, yaw = euler_from_quaternion(p.pose.orientation.x, p.pose.orientation.y, p.pose.orientation.z, p.pose.orientation.w)
     poses.append([timeStamp, p.pose.position.x, p.pose.position.y, p.pose.position.z, roll, pitch, yaw])
     posesNp = np.asanyarray(poses)
-    np.save("/home/deepak/IIITD/catkin_ws/src/floam/data/posesFloam.npy", posesNp)
+    np.save("/home/deepak/IIITD/catkin_ws/src/floam/data/posesFloam_vox30.npy", posesNp)
     if count!=0:
         print(f"Computation time per scan is: {timeStamp - timeStampPrev}")
 
