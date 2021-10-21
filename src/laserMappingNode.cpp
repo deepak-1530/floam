@@ -34,6 +34,7 @@ std::queue<nav_msgs::OdometryConstPtr> odometryBuf;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudBuf;
 
 ros::Publisher map_pub;
+
 void odomCallback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     mutex_lock.lock();
@@ -105,10 +106,10 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "main");
     ros::NodeHandle nh;
 
-    int scan_line = 64;
-    double vertical_angle = 2.0;
+    int scan_line = 16;
+    double vertical_angle = 0.6;
     double scan_period= 0.1;
-    double max_dis = 60.0;
+    double max_dis = 30.0;
     double min_dis = 2.0;
     double map_resolution = 0.4;
     nh.getParam("/scan_period", scan_period); 

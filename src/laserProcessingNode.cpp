@@ -77,20 +77,20 @@ void laser_processing(){
             *pointcloud_filtered+=*pointcloud_edge;
             *pointcloud_filtered+=*pointcloud_surf;
             pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);
-            laserCloudFilteredMsg.header.stamp = pointcloud_time;
+            laserCloudFilteredMsg.header.stamp = ros::Time::now();// pointcloud_time;
             laserCloudFilteredMsg.header.frame_id = "base_link";
             pubLaserCloudFiltered.publish(laserCloudFilteredMsg);
 
             sensor_msgs::PointCloud2 edgePointsMsg;
             pcl::toROSMsg(*pointcloud_edge, edgePointsMsg);
-            edgePointsMsg.header.stamp = pointcloud_time;
+            edgePointsMsg.header.stamp = ros::Time::now(); //pointcloud_time;
             edgePointsMsg.header.frame_id = "base_link";
             pubEdgePoints.publish(edgePointsMsg);
 
 
             sensor_msgs::PointCloud2 surfPointsMsg;
             pcl::toROSMsg(*pointcloud_surf, surfPointsMsg);
-            surfPointsMsg.header.stamp = pointcloud_time;
+            surfPointsMsg.header.stamp = ros::Time::now();//pointcloud_time;
             surfPointsMsg.header.frame_id = "base_link";
             pubSurfPoints.publish(surfPointsMsg);
 
@@ -126,13 +126,13 @@ int main(int argc, char **argv)
 
     laserProcessing.init(lidar_param);
 
-    ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/voxel_grid/output", 100, velodyneHandler);
+    ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 1, velodyneHandler);
 
-    pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 100);
+    pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 1);
 
-    pubEdgePoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100);
+    pubEdgePoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_edge", 1);
 
-    pubSurfPoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100); 
+    pubSurfPoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf", 1); 
 
     std::thread laser_processing_process{laser_processing};
 

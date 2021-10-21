@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="pcl_ros", type="pcd_to_pointcloud", name="floam", args="/home/deepak/IIITD/catkin_ws/src/floam/data/pointClouds/1461676160316442.pcd 10" />
+    <node pkg="pcl_ros", type="pcd_to_pointcloud", name="loam", args="/home/deepak/IIITD/catkin_ws/src/loam/data/pointClouds/1461676125280977.pcd 10" />    
+</launch>

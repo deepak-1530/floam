@@ -3,6 +3,7 @@
 // Homepage https://wanghan.pro
 
 #include "odomEstimationClass.h"
+#include<pcl/octree/octree_pointcloud.h>
 
 void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution){
     //init local map
@@ -17,7 +18,7 @@ void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution){
     kdtreeEdgeMap = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
     kdtreeSurfMap = pcl::KdTreeFLANN<pcl::PointXYZI>::Ptr(new pcl::KdTreeFLANN<pcl::PointXYZI>());
 
-    odom = Eigen::Isometry3d::Identity();
+    odom = Eigen::Isometry3d::Identity();   
     last_odom = Eigen::Isometry3d::Identity();
     optimization_count=2;
 }
@@ -25,7 +26,7 @@ void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution){
 void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
     *laserCloudCornerMap += *edge_in;
     *laserCloudSurfMap += *surf_in;
-    optimization_count=12;
+    optimization_count=2;
 }
 
 
@@ -35,6 +36,9 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
         optimization_count--;
 
     Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
+
+    Eigen::Isometry3d odom_ = odom;
+
     last_odom = odom;
     odom = odom_prediction;
 
@@ -146,7 +150,9 @@ void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI
             }                           
         }
     }
-    if(corner_num<20){
+    
+    if(corner_num<20)
+    {
         printf("not enough correct points");
     }
 

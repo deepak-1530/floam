@@ -14,6 +14,8 @@ void LaserProcessingClass::featureExtraction(const pcl::PointCloud<pcl::PointXYZ
     std::vector<int> indices;
     pcl::removeNaNFromPointCloud(*pc_in, indices);
 
+    // set a count that counts the number of points in the pointcloud based on distance filter
+    int countValidPts = 0;
 
     int N_SCANS = lidar_param.num_lines;
     std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> laserCloudScans;
@@ -62,8 +64,11 @@ void LaserProcessingClass::featureExtraction(const pcl::PointCloud<pcl::PointXYZ
             printf("wrong scan number\n");
         }
         laserCloudScans[scanID]->push_back(pc_in->points[i]); 
+        countValidPts += 1;
 
     }
+
+//    std::cout<<"Valid points are: "<<countValidPts<<std::endl;
 
     for(int i = 0; i < N_SCANS; i++){
         if(laserCloudScans[i]->points.size()<131){

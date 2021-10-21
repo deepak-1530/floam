@@ -13,6 +13,7 @@
 //ros lib
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Float64.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
@@ -33,6 +34,10 @@ std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
 lidar::Lidar lidar_param;
 
 ros::Publisher pubLaserOdometry;
+
+// publish the perscan computation time on a topic to store it for visualization
+ros::Publisher computeTime;
+
 void velodyneSurfHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
 {
     mutex_lock.lock();
@@ -91,11 +96,14 @@ void odom_estimation(){
                 std::chrono::duration<float> elapsed_seconds = end - start;
                 total_frame++;
                 float time_temp = elapsed_seconds.count() * 1000;
+                //ROS_INFO("current odom estimation time %f ms \n \n", time_temp);
                 total_time+=time_temp;
                 ROS_INFO("average odom estimation time %f ms \n \n", total_time/total_frame);
+                std_msgs::Float64 msg;
+                msg.data  = total_time/total_frame;
+
+                computeTime.publish(msg);
             }
-
-
 
             Eigen::Quaterniond q_current(odomEstimation.odom.rotation());
             //q_current.normalize();
@@ -112,7 +120,7 @@ void odom_estimation(){
             nav_msgs::Odometry laserOdometry;
             laserOdometry.header.frame_id = "map";
             laserOdometry.child_frame_id = "base_link";
-            laserOdometry.header.stamp = pointcloud_time;
+            laserOdometry.header.stamp = ros::Time::now();//pointcloud_time;
             laserOdometry.pose.pose.orientation.x = q_current.x();
             laserOdometry.pose.pose.orientation.y = q_current.y();
             laserOdometry.pose.pose.orientation.z = q_current.z();
@@ -124,7 +132,7 @@ void odom_estimation(){
 
         }
         //sleep 2 ms every time
-        std::chrono::milliseconds dura(2);
+        std::chrono::milliseconds dura(1);
         std::this_thread::sleep_for(dura);
     }
 }
@@ -154,10 +162,11 @@ int main(int argc, char **argv)
     lidar_param.setMinDistance(min_dis);
 
     odomEstimation.init(lidar_param, map_resolution);
-    ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 100, velodyneEdgeHandler);
-    ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 100, velodyneSurfHandler);
+    ros::Subscriber subEdgeLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_edge", 1, velodyneEdgeHandler);
+    ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 1, velodyneSurfHandler);
 
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
+    computeTime      = nh.advertise<std_msgs::Float64>("/computeTime", 1);
     std::thread odom_estimation_process{odom_estimation};
 
     ros::spin();

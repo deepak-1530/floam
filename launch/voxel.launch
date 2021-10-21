@@ -2,8 +2,8 @@
   <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
 
   <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
-  <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
-    <remap from="~input" to="/velodyne_points" />
+  <node pkg="nodelet" type="nodelet" name="voxel_grid_mapper" args="load pcl/VoxelGrid pcl_manager" output="screen">
+    <remap from="~input" to="/mapper" />
     <rosparam>
       filter_field_name: x
       filter_limit_min: -100
@@ -13,4 +13,7 @@
 
     </rosparam>
   </node>
+
+
+
 </launch>

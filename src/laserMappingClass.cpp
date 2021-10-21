@@ -23,9 +23,9 @@ void LaserMappingClass::init(double map_resolution){
 	origin_in_map_x = LASER_CELL_RANGE_HORIZONTAL;
 	origin_in_map_y = LASER_CELL_RANGE_HORIZONTAL;
 	origin_in_map_z = LASER_CELL_RANGE_VERTICAL;
-	map_width = LASER_CELL_RANGE_HORIZONTAL*2+1;
-	map_height = LASER_CELL_RANGE_HORIZONTAL*2+1;
-	map_depth = LASER_CELL_RANGE_HORIZONTAL*2+1;
+	map_width       = LASER_CELL_RANGE_HORIZONTAL*2+1;
+	map_height      = LASER_CELL_RANGE_HORIZONTAL*2+1;
+	map_depth       = LASER_CELL_RANGE_HORIZONTAL*2+1;
 
 	//downsampling size
 	downSizeFilter.setLeafSize(map_resolution, map_resolution, map_resolution);
@@ -167,10 +167,31 @@ void LaserMappingClass::updateCurrentPointsToMap(const pcl::PointCloud<pcl::Poin
 		int currentPointIdY = int(std::floor(point_temp.y / LASER_CELL_HEIGHT + 0.5)) + origin_in_map_y;
 		int currentPointIdZ = int(std::floor(point_temp.z / LASER_CELL_DEPTH + 0.5)) + origin_in_map_z;
 
-		map[currentPointIdX][currentPointIdY][currentPointIdZ]->push_back(point_temp);
-		
+		map[currentPointIdX][currentPointIdY][currentPointIdZ]->push_back(point_temp);	
 	}
-	
+
+/*
+	std::cout<<" ----- Map size is : "<<map.at(3).size()<<" --------"<<std::endl;
+
+	for(auto iter = map.begin(); iter != map.end(); iter++)
+	{
+		auto it = *iter;
+		std::cout<<it.size()<<std::endl;
+
+		for(int j = 0; j<it.size(); j++)
+		{
+			auto it_ = it.at(j);
+
+			std::cout<<"size of last subvector is "<<it_.size()<<std::endl;
+
+			for(int k = 0; k<it_.size(); k++)
+			{
+				std::cout<<it_.at(k)<<"********"<<std::endl;
+			}
+
+		}
+	}
+*/
 	//filtering points 
 	for(int i=currentPosIdX-LASER_CELL_RANGE_HORIZONTAL;i<currentPosIdX+LASER_CELL_RANGE_HORIZONTAL+1;i++){
 		for(int j=currentPosIdY-LASER_CELL_RANGE_HORIZONTAL;j<currentPosIdY+LASER_CELL_RANGE_HORIZONTAL+1;j++){
@@ -185,12 +206,14 @@ void LaserMappingClass::updateCurrentPointsToMap(const pcl::PointCloud<pcl::Poin
 
 }
 
+
 pcl::PointCloud<pcl::PointXYZI>::Ptr LaserMappingClass::getMap(void){
 	pcl::PointCloud<pcl::PointXYZI>::Ptr laserCloudMap = pcl::PointCloud<pcl::PointXYZI>::Ptr(new  pcl::PointCloud<pcl::PointXYZI>());
 	for (int i = 0; i < map_width; i++){
 		for (int j = 0; j < map_height; j++){
 			for (int k = 0; k < map_depth; k++){
-				if(map[i][j][k]!=NULL){
+				if(map[i][j][k]!=NULL)
+				{
 					*laserCloudMap += *(map[i][j][k]);
 				}
 			}
