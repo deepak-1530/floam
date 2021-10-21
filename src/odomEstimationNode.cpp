@@ -88,9 +88,15 @@ void odom_estimation(){
                 odomEstimation.initMapWithPoints(pointcloud_edge_in, pointcloud_surf_in);
                 is_odom_inited = true;
                 ROS_INFO("odom inited");
-            }else{
+            }
+            else{
                 std::chrono::time_point<std::chrono::system_clock> start, end;
                 start = std::chrono::system_clock::now();
+
+                // check condition if odom.translation().x() - last_odom.translation.x() is more than 1 metres
+
+               // std::cout<<"Difference between prev and curr is: "<<(odomEstimation.odom.translation() - odomEstimation.last_odom.translation()).norm()<<std::endl;
+                
                 odomEstimation.updatePointsToMap(pointcloud_edge_in, pointcloud_surf_in);
                 end = std::chrono::system_clock::now();
                 std::chrono::duration<float> elapsed_seconds = end - start;
@@ -98,11 +104,12 @@ void odom_estimation(){
                 float time_temp = elapsed_seconds.count() * 1000;
                 //ROS_INFO("current odom estimation time %f ms \n \n", time_temp);
                 total_time+=time_temp;
-                ROS_INFO("average odom estimation time %f ms \n \n", total_time/total_frame);
+                ROS_INFO("average odom estimation time %f and frame count is %f ms \n \n", total_time/total_frame, total_frame);
                 std_msgs::Float64 msg;
                 msg.data  = total_time/total_frame;
 
                 computeTime.publish(msg);
+                
             }
 
             Eigen::Quaterniond q_current(odomEstimation.odom.rotation());

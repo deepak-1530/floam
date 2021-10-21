@@ -80,7 +80,10 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
     odom = Eigen::Isometry3d::Identity();
     odom.linear() = q_w_curr.toRotationMatrix();
     odom.translation() = t_w_curr;
-    addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+
+    // add points to map only when the translation difference between the previous and current lidar scan is sufficient
+    if((last_odom.translation() - odom.translation()).norm() > 0.40)
+        addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
 
 }
 
@@ -228,6 +231,8 @@ void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::
         pointAssociateToMap(&downsampledSurfCloud->points[i], &point_temp);
         laserCloudSurfMap->push_back(point_temp);
     }
+
+    std::cout<<"Edge map size is: "<<laserCloudCornerMap->size()<<std::endl;
     
     double x_min = +odom.translation().x()-100;
     double y_min = +odom.translation().y()-100;
