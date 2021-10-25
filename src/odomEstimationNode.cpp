@@ -17,6 +17,7 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <geometry_msgs/Pose.h>
 
 //pcl lib
 #include <pcl_conversions/pcl_conversions.h>
@@ -34,6 +35,7 @@ std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudSurfBuf;
 lidar::Lidar lidar_param;
 
 ros::Publisher pubLaserOdometry;
+ros::Publisher pubLaserPose;
 
 // publish the perscan computation time on a topic to store it for visualization
 ros::Publisher computeTime;
@@ -137,7 +139,18 @@ void odom_estimation(){
             laserOdometry.pose.pose.position.z = t_current.z();
             pubLaserOdometry.publish(laserOdometry);
 
+            geometry_msgs::Pose carCoord;
+            carCoord.position.x = t_current.x();
+            carCoord.position.y = t_current.y();
+            carCoord.position.z = t_current.z();
+            carCoord.orientation.x = q_current.x();
+            carCoord.orientation.y = q_current.y();
+            carCoord.orientation.z = q_current.z();
+            carCoord.orientation.w = q_current.w();
+            pubLaserPose.publish(carCoord);
+
         }
+        
         //sleep 2 ms every time
         std::chrono::milliseconds dura(1);
         std::this_thread::sleep_for(dura);
@@ -173,6 +186,7 @@ int main(int argc, char **argv)
     ros::Subscriber subSurfLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/laser_cloud_surf", 1, velodyneSurfHandler);
 
     pubLaserOdometry = nh.advertise<nav_msgs::Odometry>("/odom", 100);
+    pubLaserPose     = nh.advertise<geometry_msgs::Pose>("/lidarPose",1);
     computeTime      = nh.advertise<std_msgs::Float64>("/computeTime", 1);
     std::thread odom_estimation_process{odom_estimation};
 
