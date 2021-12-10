@@ -7,7 +7,7 @@ from mpl_toolkits import mplot3d
 import tf
 
 def plotTrajectory(floamTraj, scanMatcherTraj, loamTraj, floamLocalTraj_30, floamLocalTraj_25):
-    lW = 1
+    lW = 2
 
     font = {'family' : 'normal',
         'weight' : 'bold',
@@ -15,26 +15,26 @@ def plotTrajectory(floamTraj, scanMatcherTraj, loamTraj, floamLocalTraj_30, floa
 
     plt.rc('font', **font)
     
-    plt.plot(floamTraj[:,1], floamTraj[:,2], linewidth=lW)
-    plt.plot(loamTraj[:,1], loamTraj[:,2], lineWidth=lW)
+  #  plt.plot(floamTraj[:,1], floamTraj[:,2], linewidth=lW)
+  #  plt.plot(loamTraj[:,1], loamTraj[:,2], lineWidth=lW)
     plt.plot(scanMatcherTraj[:,1], scanMatcherTraj[:,2],lineWidth=lW)
     plt.plot(floamLocalTraj_30[:,1], floamLocalTraj_30[:,2],lineWidth=lW)
     plt.plot(floamLocalTraj_25[:,1], floamLocalTraj_25[:,2],lineWidth=lW)
-    plt.legend(["FLOAM","LOAM","Mapper", "FLOAM_30m_threshold","FLOAM_25m_threshold"])
+    plt.legend(["Mapper", "FLOAM_30m_threshold","FLOAM_30m_threshold_35cm_Map"])
     plt.xlabel("X coordinate")
     plt.ylabel("Y Coordinate")
     plt.show()
     fig = plt.figure()
 
     ## Comparing the yaw values of the floam30, floam25 and mapper
-    plt.plot(floamTraj[:,6]*180.0/3.14, '*',linewidth=lW)
-    plt.plot(floamLocalTraj_30[:,6]*180.0/3.14, '*',linewidth=lW)
-    plt.plot(scanMatcherTraj[:,6]*180.0/3.14, '*',linewidth=lW)
-    plt.legend(["Floam", "Floam_30", "Mapper"])
+    plt.plot(floamTraj[:,6]*180.0/3.14,linewidth=lW)
+    plt.plot(floamLocalTraj_30[:,6]*180.0/3.14 ,linewidth=lW)
+    plt.plot(scanMatcherTraj[:,6]*180.0/3.14,linewidth=lW)
+    plt.plot(floamLocalTraj_25[:,6]*180.0/3.14, linewidth=lW)
+    plt.legend(["Floam", "Floam_30", "Mapper", "Floam_35cm_Map"])
     plt.xlabel("Frame Count")
     plt.ylabel("Yaw")
     plt.show()
-
 
     ax = plt.axes(projection='3d')
     ax.plot3D(floamTraj[:,1], floamTraj[:,2], floamTraj[:,3], linewidth=lW)
@@ -140,7 +140,6 @@ def computeMSE(floamTraj, scanMatcherTraj, loamTraj, gpsTraj, t265Traj, floamLoc
             posErr += abs(posLoam - posScanMatcher)
             count += 1
 
-
    # print(f'\n **** Mean Absolute Error is : {posErr/count, count} \n')
     print(posErr/count, count)
 
@@ -155,9 +154,19 @@ if __name__=="__main__":
     t265Traj         = np.load("/home/deepak/IIITD/catkin_ws/src/data/t265_data.npy")
     #floamLocalTraj_30 = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_r100.npy')
     floamLocalTraj_30 = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30.npy')
-    floamLocalTraj_35 =  np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_r100_35.npy')
-    times             = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_times.npy')
+    #floamLocalTraj_35 = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_40cm_thresh.npy')
+    floamLocalTraj_35 = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_30cm_thresh_20kFeats.npy')
+    #floamLocalTraj_35 =  np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_r100_35.npy')
+    times             = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_times_40cm.npy')
+    times_20          = np.load('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_times_30cm_20kFeats.npy')
+    floam_demo        = np.load('/home/deepak/IIITD/catkin_ws/src/floam/scripts/demo_10hz.npy')
+    
+    plt.plot(floam_demo[:,6]*180/3.14,'r')
+    plt.show()
+
     print(times.shape, floamLocalTraj_30.shape)
     plt.plot(times[2:])
+    plt.plot(times_20)
+    plt.legend(["FLOAM", "FLOAM_20K"])
     plt.show()
     computeMSE(floamTraj, scanMatcherTraj, loamTraj, gpsTraj, t265Traj, floamLocalTraj_30, floamLocalTraj_35)

@@ -20,24 +20,26 @@ void OdomEstimationClass::init(lidar::Lidar lidar_param, double map_resolution){
 
     odom = Eigen::Isometry3d::Identity();   
     last_odom = Eigen::Isometry3d::Identity();
-    optimization_count=2;
+    optimization_count=3;
 }
 
 void OdomEstimationClass::initMapWithPoints(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
     *laserCloudCornerMap += *edge_in;
     *laserCloudSurfMap += *surf_in;
-    optimization_count=2;
+    optimization_count=3;
+
+    std::cout<<"Map Size is: "<<laserCloudCornerMap->size()<<std::endl;
 }
 
 
 void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& edge_in, const pcl::PointCloud<pcl::PointXYZI>::Ptr& surf_in){
 
-    if(optimization_count>2)
+    if(optimization_count>3)
         optimization_count--;
 
     Eigen::Isometry3d odom_prediction = odom * (last_odom.inverse() * odom);
 
-    Eigen::Isometry3d odom_ = odom;
+   // Eigen::Isometry3d odom_ = odom;
 
     last_odom = odom;
     odom = odom_prediction;
@@ -48,7 +50,9 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
     pcl::PointCloud<pcl::PointXYZI>::Ptr downsampledEdgeCloud(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<pcl::PointXYZI>::Ptr downsampledSurfCloud(new pcl::PointCloud<pcl::PointXYZI>());
     downSamplingToMap(edge_in,downsampledEdgeCloud,surf_in,downsampledSurfCloud);
+
     //ROS_WARN("point nyum%d,%d",(int)downsampledEdgeCloud->points.size(), (int)downsampledSurfCloud->points.size());
+    
     if(laserCloudCornerMap->points.size()>10 && laserCloudSurfMap->points.size()>50){
         kdtreeEdgeMap->setInputCloud(laserCloudCornerMap);
         kdtreeSurfMap->setInputCloud(laserCloudSurfMap);
@@ -74,16 +78,20 @@ void OdomEstimationClass::updatePointsToMap(const pcl::PointCloud<pcl::PointXYZI
             ceres::Solve(options, &problem, &summary);
 
         }
-    }else{
+    }
+    
+    else
+    {
         printf("not enough points in map to associate, map error");
     }
+
     odom = Eigen::Isometry3d::Identity();
     odom.linear() = q_w_curr.toRotationMatrix();
     odom.translation() = t_w_curr;
 
     // add points to map only when the translation difference between the previous and current lidar scan is sufficient
-    if((last_odom.translation() - odom.translation()).norm() > 0.40)
-        addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
+    //if((last_odom.translation() - odom.translation()).norm() > 0.30)
+    //addPointsToMap(downsampledEdgeCloud,downsampledSurfCloud);
 
 }
 
@@ -124,9 +132,11 @@ void OdomEstimationClass::addEdgeCostFactor(const pcl::PointCloud<pcl::PointXYZI
                 Eigen::Vector3d tmp(map_in->points[pointSearchInd[j]].x,
                                     map_in->points[pointSearchInd[j]].y,
                                     map_in->points[pointSearchInd[j]].z);
+
                 center = center + tmp;
                 nearCorners.push_back(tmp);
             }
+
             center = center / 5.0;
 
             Eigen::Matrix3d covMat = Eigen::Matrix3d::Zero();
@@ -218,6 +228,10 @@ void OdomEstimationClass::addSurfCostFactor(const pcl::PointCloud<pcl::PointXYZI
 
 void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledEdgeCloud, const pcl::PointCloud<pcl::PointXYZI>::Ptr& downsampledSurfCloud){
 
+
+    // keep the feature maps size as 10k
+    // if the size crosses 10k -> remove the excess points from the starting
+
     for (int i = 0; i < (int)downsampledEdgeCloud->points.size(); i++)
     {
         pcl::PointXYZI point_temp;
@@ -231,7 +245,21 @@ void OdomEstimationClass::addPointsToMap(const pcl::PointCloud<pcl::PointXYZI>::
         pointAssociateToMap(&downsampledSurfCloud->points[i], &point_temp);
         laserCloudSurfMap->push_back(point_temp);
     }
+/*
+    int th = 20000;
+    
+    if(laserCloudCornerMap->size() > th)
+    {
+        std::cout<<"Edge feature vector size is more than 10000 "<<laserCloudCornerMap->size()-th<<std::endl;
+        laserCloudCornerMap->erase(laserCloudCornerMap->begin(), laserCloudCornerMap->begin() + (laserCloudCornerMap->size() - th));
+        std::cout<<"Edge feature vector size is (after erasing)"<<laserCloudCornerMap->size()<<std::endl;
+    }
 
+    if(laserCloudSurfMap->size() > th)
+    {
+        laserCloudSurfMap->erase(laserCloudSurfMap->begin() , laserCloudSurfMap->begin() +(laserCloudSurfMap->size() - th));
+    }
+*/
     std::cout<<"Edge map size is: "<<laserCloudCornerMap->size()<<std::endl;
     
     double x_min = +odom.translation().x()-100;

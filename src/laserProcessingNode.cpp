@@ -27,20 +27,28 @@
 #include "lidar.h"
 #include "laserProcessingClass.h"
 
+bool relocalize = false;
+
+int count = 0;
+
+pcl::PointCloud<pcl::PointXYZI>::Ptr map (new pcl::PointCloud<pcl::PointXYZI>);
 
 LaserProcessingClass laserProcessing;
 std::mutex mutex_lock;
-std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudBuf;
+std::queue<sensor_msgs::PointCloud2> pointCloudBuf;
 lidar::Lidar lidar_param;
 
 ros::Publisher pubEdgePoints;
 ros::Publisher pubSurfPoints;
 ros::Publisher pubLaserCloudFiltered;
 
-void velodyneHandler(const sensor_msgs::PointCloud2ConstPtr &laserCloudMsg)
+void velodyneHandler(const sensor_msgs::PointCloud2 laserCloudMsg)
 {
     mutex_lock.lock();
-    pointCloudBuf.push(laserCloudMsg);
+    
+    if(!relocalize)
+        pointCloudBuf.push(laserCloudMsg);
+
     mutex_lock.unlock();
    
 }
@@ -50,12 +58,16 @@ int total_frame=0;
 
 void laser_processing(){
     while(1){
+        if(relocalize)
+        {
+            laserProcessing.lidar_param.max_distance=200;
+        }
         if(!pointCloudBuf.empty()){
             //read data
             mutex_lock.lock();
             pcl::PointCloud<pcl::PointXYZI>::Ptr pointcloud_in(new pcl::PointCloud<pcl::PointXYZI>());
-            pcl::fromROSMsg(*pointCloudBuf.front(), *pointcloud_in);
-            ros::Time pointcloud_time = (pointCloudBuf.front())->header.stamp;
+            pcl::fromROSMsg(pointCloudBuf.front(), *pointcloud_in);
+            ros::Time pointcloud_time = (pointCloudBuf.front()).header.stamp;
             pointCloudBuf.pop();
             mutex_lock.unlock();
 
@@ -79,6 +91,7 @@ void laser_processing(){
             pcl::toROSMsg(*pointcloud_filtered, laserCloudFilteredMsg);
             laserCloudFilteredMsg.header.stamp = ros::Time::now();// pointcloud_time;
             laserCloudFilteredMsg.header.frame_id = "base_link";
+
             pubLaserCloudFiltered.publish(laserCloudFilteredMsg);
 
             sensor_msgs::PointCloud2 edgePointsMsg;
@@ -93,6 +106,10 @@ void laser_processing(){
             surfPointsMsg.header.stamp = ros::Time::now();//pointcloud_time;
             surfPointsMsg.header.frame_id = "base_link";
             pubSurfPoints.publish(surfPointsMsg);
+
+            relocalize=false;
+            laserProcessing.lidar_param.max_distance=30;
+            
 
         }
         //sleep 2 ms every time
@@ -117,6 +134,7 @@ int main(int argc, char **argv)
     nh.getParam("/max_dis", max_dis);
     nh.getParam("/min_dis", min_dis);
     nh.getParam("/scan_line", scan_line);
+    nh.getParam("/relocalization", relocalize);
 
     lidar_param.setScanPeriod(scan_period);
     lidar_param.setVerticalAngle(vertical_angle);
@@ -126,13 +144,26 @@ int main(int argc, char **argv)
 
     laserProcessing.init(lidar_param);
 
-    ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/velodyne_points", 1, velodyneHandler);
-
     pubLaserCloudFiltered = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points_filtered", 1);
 
     pubEdgePoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_edge", 1);
 
     pubSurfPoints = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf", 1); 
+
+    if(relocalize)
+    {
+        pcl::io::loadPCDFile<pcl::PointXYZI>("/home/deepak/IIITD/catkin_ws/src/floam/maps/floamMap_Test_12Nov_bag.pcd", *map);
+        sensor_msgs::PointCloud2 mapMsg;
+        pcl::toROSMsg(*map, mapMsg);
+        mapMsg.header.stamp = ros::Time::now();
+        mapMsg.header.frame_id = "map";
+
+        mutex_lock.lock();
+        pointCloudBuf.push(mapMsg);
+        mutex_lock.unlock();
+    }
+
+    ros::Subscriber subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/transformed_points", 1, velodyneHandler);
 
     std::thread laser_processing_process{laser_processing};
 

@@ -11,14 +11,23 @@ from geometry_msgs.msg import PoseStamped
 from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 import tf
+import os
+import ros_numpy
+
 
 trajectory =  Path()
 trajPub = rospy.Publisher("/slamTrajectoryFloam", Path, queue_size=1)
 markerPub = rospy.Publisher("/slamTrajMarkerFloam", MarkerArray, queue_size=1)
 
+mapPath     = '/home/deepak/IIITD/catkin_ws/src/floam/maps'
+mapFileName = 'floamMap_Test_12Nov_bag.npy'
+
+prevWayPoint = []
+currWayPoint = []
 
 count = 0
 poses = []
+mavrosPoses = []
 timeStampPrev = 0
 
 times = []
@@ -26,6 +35,20 @@ Yaws  = []
 
 T_Lidar2Local = np.zeros((3,4))
 
+def mapCallback(msg):
+    # convert to numpy array and save
+
+    pcNp = ros_numpy.numpify(msg)
+
+    pointsNp = np.zeros((pcNp.shape[0], 3))
+
+    pointsNp[:,0] = pcNp['x']
+    pointsNp[:,1] = pcNp['y']
+    pointsNp[:,2] = pcNp['z']
+    
+    np.save(os.path.join(mapPath, mapFileName), pointsNp)
+    print("Map Saved as numpy array")
+    
 
 def eulerFromQuaternion(x, y, z, w):
         """
@@ -55,7 +78,15 @@ def computeCb(msg):
     times.append(msg.data)
 
     Times = np.array(times)
-    np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_times.npy', Times)
+    np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_times_30cm_20kFeats.npy', Times)
+
+def mavrosPoseCb(msg):
+    print(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z)
+    global mavrosPoses
+    print("mavros poses taken")
+    data = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w]
+    mavrosPoses.append(data)#, msg.pose.orientation.x. msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
+    np.save("mavrosPoses_test_floam_12nov_football_track_bag.npy", np.array(mavrosPoses))
 
 def mavrosCb(msg):
     global Yaws
@@ -65,9 +96,10 @@ def mavrosCb(msg):
     euler = tf.transformations.euler_from_quaternion(quats)
     yaw   = euler[0]
     Yaws.append(euler) # this is yaw in radians
-    np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_yaws.npy', np.array(Yaws))
+    np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_yaws_30cm.npy', np.array(Yaws))
 
 def odomCb(msg):
+    global prevWayPoint, currWayPoint
     global count
     global timeStampPrev
     p = PoseStamped()
@@ -101,6 +133,7 @@ def odomCb(msg):
     trajPub.publish(trajectory)
     markerPub.publish(m)
 
+
     quaternion = [p.pose.orientation.x, p.pose.orientation.y, p.pose.orientation.z, p.pose.orientation.w]
     euler = tf.transformations.euler_from_quaternion(quaternion)
     poses.append([timeStamp, p.pose.position.x, p.pose.position.y, p.pose.position.z, euler[0], euler[1], euler[2]])
@@ -110,7 +143,10 @@ def odomCb(msg):
     #np.save("/home/deepak/IIITD/catkin_ws/src/data/posesFloam_r100_40.npy", posesNp) ORIGINAL
 
     #np.save('posesFloam_Bag_dthresh_30_6thOctober.npy', posesNp)
-    np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30.npy', posesNp) # with 35 metre threshold
+    #np.save('/home/deepak/IIITD/catkin_ws/src/data/posesFloam_noMap_30_30cm_thresh_20kFeats.npy', posesNp) # with 35 metre threshold
+    
+    #np.save('test_12Nov_bag_football_track_test_reloc_10Nov.npy', posesNp)
+    
     if count!=0:
         print timeStamp - timeStampPrev
 
@@ -122,5 +158,7 @@ if __name__=="__main__":
     print("Here")
     odomSub = rospy.Subscriber("/odom", Odometry, odomCb)
     computeTimeSub = rospy.Subscriber('/computeTime', Float64, computeCb)
-    yawMavros      = rospy.Subscriber('/mavros/local_position/pose', PoseStamped, mavrosCb)
+    mavrosCb       = rospy.Subscriber('/mavros/local_position/pose', PoseStamped, mavrosPoseCb)
+    #yawMavros      = rospy.Subscriber('/mavros/local_position/pose', PoseStamped, mavrosCb)
+    mapCb          = rospy.Subscriber('/map', PointCloud2, mapCallback)
     rospy.spin()
